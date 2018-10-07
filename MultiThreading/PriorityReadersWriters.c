@@ -1,4 +1,5 @@
-#include <pthread>
+#include <pthread.h>
+#include <stdio.h>
 
 #define NUM_READERS 5
 #define NUM_WRITERS 5
@@ -107,7 +108,7 @@ void* writer(void* args)
       if(waitting_reader_num>0)
         pthread_cond_broadcast(&c_reader);
       else
-        pthread_cond_signal(&writer);
+        pthread_cond_signal(&c_writer);
 
     pthread_mutex_unlock(&mtx);
   }
@@ -120,4 +121,28 @@ int main()
   int i;
   int readers[NUM_READERS];
   int writers[NUM_READERS];
+
+  pthread_t reader_thread_id[NUM_READERS];
+  pthread_t writer_thread_id[NUM_WRITERS];
+
+  for(i=0;i<NUM_READERS;i++)
+  {
+    readers[i]=i;
+    pthread_create(&reader_thread_id[i],NULL,reader,&readers[i]);
+  }
+
+  for(i=0;i<NUM_WRITERS;i++)
+  {
+    writers[i]=i;
+    pthread_create(&writer_thread_id[i],NULL,writer,&writers[i]);
+  }
+
+  for(i=0;i<NUM_READERS;i++)
+  {
+    pthread_join(reader_thread_id[i],NULL);
+  }
+  for(i=0;i<NUM_WRITERS;i++)
+  {
+    pthread_join(writer_thread_id[i],NULL);
+  }
 }
