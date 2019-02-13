@@ -30,6 +30,11 @@ struct devregs{
 unsigned int read_dev(unsigned devno){
 
         struct devregs * const dvp = DEVADDR + devno;
+        // dvp points to an volatile address
+        // which means *dvp may change its value
+        // so the while loop should not optimize as ( since the expression doesn't change, make it a infinite loop)
+        
+        // if the address is not volatile, then 
 
         if(devno >= NDEVS)
                 return(0xffff);
@@ -44,3 +49,11 @@ unsigned int read_dev(unsigned devno){
 
         return((dvp->data) & 0xff);
 }
+
+
+// or we can do this antoher way:
+struct devregs{
+      unsigned short  csr;    /* control & status */
+      unsigned short  data;   /* data port */
+};
+volatile struct devregs *const dvp=DEVADDR+devno;
