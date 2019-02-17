@@ -1,3 +1,7 @@
+
+// Look at this example:
+// Would it be strange that "-10 > 0" ?
+
 #include <stdio.h>
 #include <stdlib.h>
 int main() {
@@ -7,7 +11,7 @@ int main() {
 	stop_val = 0;
 	i = -10;
 
-	while (i - stop_val>0) {    // no warning, but using '<' may cause a warning
+	while (i - stop_val>0) {    // no warning, but using '>' may cause a warning
 		printf("%d\n", i);
 		i = i + 1;
 	}
