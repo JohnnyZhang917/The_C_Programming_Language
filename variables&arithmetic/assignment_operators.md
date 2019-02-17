@@ -15,3 +15,11 @@ works. The value of d is assigned to c, the result of that is assigned to b and 
 
 ### Why could that work?
 It makes use of the fact that expressions involving only assignment operators are **evaluated from right to left**
+
+## Carefully using the result of '='
+
+```c
+while( (input_c = getchar()) != EOF){
+            printf("%c was read\n", input_c);
+    }
+```
