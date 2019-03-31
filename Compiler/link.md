@@ -65,6 +65,10 @@ int main()
     
     gcc -O2 main.c -o main
 
+or just lowest optimization:
+
+    gcc -O main.c -o main
+
 ## 重复定义
 如果我们把定义写在头文件，而该头文件又被重复引用，就会导致重复定义
 
