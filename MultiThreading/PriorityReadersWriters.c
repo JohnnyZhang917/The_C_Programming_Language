@@ -1,10 +1,20 @@
 #include <pthread>
 
-// global that repsents the number of readers
-int reader_num=0;
+#define NUM_READERS 5
+#define NUM_WRITERS 5
+
+#define NUM_X_TIME 10
 
 // shared resource
 int res=0;
+
+// a flag shows that a writer is writting
+int wrting_flg=0;
+// a flag shows that a reader is reading
+int reading_flg=0;
+
+// Number of reader waitting
+int waitting_reader_num=0;
 
 // condition var
 pthread_cond_t c_writer = PTHREAD_COND_INITIALIZER;
@@ -14,46 +24,100 @@ pthread_cond_t c_reader = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mtx= PTHREAD_MUTEX_INITIALIZER;
 
 // reader: has priority over writer
-void* reader(void)
+void* reader(void* ReaderID)
 {
   int i;
+  int reader_id= *((int*)ReaderID);
+  int local_reader_num=0;
 
-  reader_num++;
+  for(int j=0;j<NUM_X_TIME;j++)
+  {
+    // reader locks
+    pthread_mutex_lock(&mtx);
 
-  // 1, lock mutex
-  pthread_mutex_lock(&mtx);
+      // may wait for write process
+      waitting_reader_num++;
 
-    printf("Reader: reader number= %d\n",reader_num);
+      while(wrting_flg==1)
+      {
+        pthread_cond_wait(&c_reader,&mtx);
+      }
+      //  no more watting
+      waitting_reader_num--;
+      local_reader_num=++reading_flg;
 
+    pthread_mutex_unlock(&mtx);
+    
+    // Note :
+    //  In this area, reading_flg makes sure that no writting will happen
+    //  But, the number of readers may change by other readers
+
+    // reading process
     i=res;
+    printf("Reader= %d: reader number= %d, res= %d \n",reader_id,local_reader_num,i);
 
-    reader_num--;
+    // reader exiting
+    pthread_mutex_lock(&mtx);
 
-    printf("Reader: res= %d\n",res);
+      // reset flag
+      reading_flg--;
+      // notify writers
+      if(reading_flg==0) // waitting_reader_num==0 will always be true here
+        pthread_cond_signal(&c_writer);
+      else
+      {
+        pthread_cond_broadcast(&c_reader);
+      }
+    pthread_mutex_unlock(&mtx);
 
-  pthread_mutex_unlock(&mtx);
-
-  if(i==0)
-    pthread_cond_signal(&c_writer,&mtx);
+  }
+  pthread_exit(0);
 }
 
-void* writer(void)
+void* writer(void* args)
 {
-  pthread_mutex_lock(&mtx);
+  int tid=*((int*)args);
+  int local_reader_num;
 
-    while(reader_num>0)
-    {
-      pthread_cond_wait(&c_writer,&mtx);
-    }
+  for(int j=0;j<NUM_X_TIME;j++)
+  {
+    pthread_mutex_lock(&mtx);
 
-    printf("Writer: reader number= %d\n",reader_num);
+      while(reading_flg!=0)
+      {
+        pthread_cond_wait(&c_writer,&mtx);
+      }
+
+      // mark a writing flag
+      wrting_flg=1;
+    
+    pthread_mutex_unlock(&mtx);
+
+    local_reader_num=reading_flg;
     res++;
-    printf("Writer: writes res = %d\n",res);
-  
-  pthread_mutex_unlock(&mtx);
+    // do the writing
+    printf("Writer=%d: reader number= %d, res= %d\n",tid,local_reader_num,res);
+
+    pthread_mutex_lock(&mtx);
+
+      // reset thr flag
+      wrting_flg=0;
+
+      // notify waiting readers
+      if(waitting_reader_num>0)
+        pthread_cond_broadcast(&c_reader);
+      else
+        pthread_cond_signal(&writer);
+
+    pthread_mutex_unlock(&mtx);
+  }
+  pthread_exit(0);
 }
 
 int main()
 {
   // pthread_mutex_init(&mtx,NULL);
+  int i;
+  int readers[NUM_READERS];
+  int writers[NUM_READERS];
 }
